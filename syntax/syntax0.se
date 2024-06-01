@@ -1,0 +1,32 @@
+func add(a:int, b:int) > int {
+    return a+b;
+}
+
+func main() > int {
+    return 0;
+}
+
+func lwlv() > void {
+    asm {
+        mov rax,10
+        mov rbx,0b1001
+        mov rcx,0xA
+    }
+}
+
+func cnd() > void {
+    if (1 != 2)
+        then { return 0; }
+        else { return 1; }
+}
+
+namespace LSpace {
+    func tst() > void {
+        return;
+    }
+
+    func halal() > void {
+        -- Not haram
+        $here.tst();
+    }
+}
