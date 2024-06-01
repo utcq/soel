@@ -3,6 +3,7 @@ func add(a:int, b:int) > int {
 }
 
 func main() > int {
+    var x:int = 0;
     return 0;
 }
 
@@ -26,7 +27,7 @@ namespace LSpace {
     }
 
     func halal() > void {
-        -- Not haram
-        $here.tst();
+        // Not haram
+        here.tst();
     }
 }
