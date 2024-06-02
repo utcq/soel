@@ -64,30 +64,30 @@ impl AVRWriter {
         }
     }
 
-    pub fn create_section(&mut self, name: &str) -> usize {
+    pub fn create_section(&mut self, name: &str) -> u16 {
         let section = Section {
             name: name.to_string(),
             data: Vec::new(),
         };
         self.sections.push(section);
-        return self.sections.len() - 1;
+        return (self.sections.len() - 1) as u16;
     }
 
-    pub fn select_section(&mut self, section: usize) {
-        self.section = section;
+    pub fn select_section(&mut self, section: u16) {
+        self.section = section as usize;
     }
 
-    pub fn create_label(&mut self, name: &str) -> usize {
+    pub fn create_label(&mut self, name: &str) -> u16 {
         let label = Label {
             name: name.to_string(),
             instructions: Vec::new(),
         };
         self.sections[self.section].data.push(label);
-        return self.sections[self.section].data.len() - 1;
+        return (self.sections[self.section].data.len() - 1) as u16;
     }
 
-    pub fn select_label(&mut self, label: usize) {
-        self.label = label;
+    pub fn select_label(&mut self, label: u16) {
+        self.label = label as usize;
     }
 
     pub fn new_global(&mut self, name: &str) {

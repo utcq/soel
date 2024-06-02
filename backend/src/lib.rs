@@ -8,7 +8,7 @@ struct Function {
     name: String,
     ret: String,
     args: Vec<String>,
-    address: usize,
+    address: u16,
 }
 
 struct Variable {
@@ -21,8 +21,8 @@ struct Variable {
 struct Context {
     functions: Vec<Function>,
     locals: Vec<Variable>,
-    text: usize,
-    data: usize,
+    text: u16,
+    data: u16,
     stack_offset: u16,
 }
 pub struct Seb<'a> {
