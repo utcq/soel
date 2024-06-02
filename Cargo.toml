@@ -1,5 +1,5 @@
 [workspace]
-members = ["ast", "backend", "compiler", "lexer", "swriter"]
+members = ["ast", "backend", "compiler", "lexer", "swriter", "reports"]
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
@@ -7,3 +7,4 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace.dependencies]
+slotmap = "1.0.7"
