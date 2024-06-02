@@ -7,11 +7,13 @@
 Expr {
     Add/Sub/Mul/Div/Pow [left, right]
     Neg [term]
+    Decl [name, type, value]
     Assign [name, source]
     Call [name, args]
     If [cond, then, else]
     While [cond, body]
     For [init, cond, step, body]
+    Parameter [name, type]
     Function [name, args, body]
 }
 */
@@ -26,6 +28,7 @@ pub enum Expr {
     Pow(Box<Expr>, Box<Expr>),
     Neg(Box<Expr>),
     Var(String),
+    Decl(String, String, Box<Expr>),
     Assign(String, Box<Expr>),
     Call(String, Vec<Expr>),
     Block(Vec<Expr>),
@@ -35,7 +38,7 @@ pub enum Expr {
     Return(Box<Expr>),
     Break,
     Continue,
-    Function(String, Vec<String>, Box<Expr>),
+    Function(String, String, Vec<(String, String)>, Box<Expr>),
     Empty,
 }
 

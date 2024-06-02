@@ -1,5 +1,5 @@
 [workspace]
-members = ["ast", "compiler", "lexer"]
+members = ["ast", "backend", "compiler", "lexer", "swriter"]
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
