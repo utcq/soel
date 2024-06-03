@@ -34,3 +34,35 @@
 ;   int y = 8;  
 ;   return 0;
 ;}
+
+
+00000000 <main>:
+   0:   cf 93           push    r28
+   2:   df 93           push    r29
+   4:   00 d0           rcall   .+0             ; 0x6 <L0^A>
+   6:   00 d0           rcall   .+0             ; 0x8 <L0^A>
+
+   8:   cd b7           in      r28, 0x3d       ; 61
+   a:   de b7           in      r29, 0x3e       ; 62
+
+   c:   85 e0           ldi     r24, 0x05       ; 5
+   e:   90 e0           ldi     r25, 0x00       ; 0
+  10:   9a 83           std     Y+2, r25        ; 0x02
+  12:   89 83           std     Y+1, r24        ; 0x01
+
+  14:   83 e0           ldi     r24, 0x03       ; 3
+  16:   90 e0           ldi     r25, 0x00       ; 0
+  18:   9c 83           std     Y+4, r25        ; 0x04
+  1a:   8b 83           std     Y+3, r24        ; 0x03
+
+  1c:   89 81           ldd     r24, Y+1        ; 0x01
+  1e:   9a 81           ldd     r25, Y+2        ; 0x02
+
+  20:   0f 90           pop     r0
+  22:   0f 90           pop     r0
+  24:   0f 90           pop     r0
+  26:   0f 90           pop     r0
+  
+  28:   df 91           pop     r29
+  2a:   cf 91           pop     r28
+  2c:   08 95           ret

@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Registers {
     R0,
     R1,
@@ -33,6 +33,50 @@ pub enum Registers {
     R30,
     R31,
     Y,
+}
+
+impl Registers {
+    pub fn index(off:u8) -> Registers {
+        match off {
+            0 => Registers::R0,
+            1 => Registers::R1,
+            2 => Registers::R2,
+            3 => Registers::R3,
+            4 => Registers::R4,
+            5 => Registers::R5,
+            6 => Registers::R6,
+            7 => Registers::R7,
+            8 => Registers::R8,
+            9 => Registers::R9,
+            10 => Registers::R10,
+            11 => Registers::R11,
+            12 => Registers::R12,
+            13 => Registers::R13,
+            14 => Registers::R14,
+            15 => Registers::R15,
+            16 => Registers::R16,
+            17 => Registers::R17,
+            18 => Registers::R18,
+            19 => Registers::R19,
+            20 => Registers::R20,
+            21 => Registers::R21,
+            22 => Registers::R22,
+            23 => Registers::R23,
+            24 => Registers::R24,
+            25 => Registers::R25,
+            26 => Registers::R26,
+            27 => Registers::R27,
+            28 => Registers::R28,
+            29 => Registers::R29,
+            30 => Registers::R30,
+            31 => Registers::R31,
+            32 => Registers::Y,
+            _ => Registers::R0,
+        }
+    }
+    pub fn add(&self, off: u8) -> Registers {
+        return Registers::index((*self as u8) + off);
+    }
 }
 
 struct Label {
@@ -127,11 +171,11 @@ impl AVRWriter {
         self.append_instruction(format!("push {:?}", register));
     }
 
-    pub fn IN(&mut self, register: Registers, port: i32) {
+    pub fn IN(&mut self, register: Registers, port: i16) {
         self.append_instruction(format!("in {:?}, {}", register, port));
     }
 
-    pub fn LDI(&mut self, register: Registers, value: i32) {
+    pub fn LDI(&mut self, register: Registers, value: i16) {
         self.append_instruction(format!("ldi {:?}, {}", register, value));
     }
 
