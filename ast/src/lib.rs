@@ -59,13 +59,11 @@ mod tests {
             root: vec![
                 Expr::Assign("x".to_string(), Box::new(Expr::Number(10))),
                 Expr::Assign("y".to_string(), Box::new(Expr::Number(20))),
-                Expr::Return(Box::new(
-                    Expr::Add(
-                        Box::new(Expr::Var("x".to_string())),
-                        Box::new(Expr::Var("y".to_string())),
-                    ),
-                ))
-            ]
+                Expr::Return(Box::new(Expr::Add(
+                    Box::new(Expr::Var("x".to_string())),
+                    Box::new(Expr::Var("y".to_string())),
+                ))),
+            ],
         };
         assert_eq!(format!("{:?}", tast).as_str(), RESULTADD);
     }

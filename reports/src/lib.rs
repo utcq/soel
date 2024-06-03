@@ -129,12 +129,3 @@ impl Extend<Report> for ReportContext {
         self.reports.extend(iter)
     }
 }
-
-pub mod realtime_logger {
-    pub fn loading_const(cst: i16, reg: swriter::Registers) {
-        println!("[SOEL_RT] Loading {} into {:?}", cst, reg);
-    }
-    pub fn loading_var(var: String, offset:u16, reg: swriter::Registers) {
-        println!("[SOEL_RT] Moving var {} [Y+{}] into {:?}", var, offset, reg);
-    }
-}

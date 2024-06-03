@@ -36,7 +36,7 @@ pub enum Registers {
 }
 
 impl Registers {
-    pub fn index(off:u8) -> Registers {
+    pub fn index(off: u8) -> Registers {
         match off {
             0 => Registers::R0,
             1 => Registers::R1,
@@ -71,11 +71,13 @@ impl Registers {
             30 => Registers::R30,
             31 => Registers::R31,
             32 => Registers::Y,
+
             _ => Registers::R0,
         }
     }
+
     pub fn add(&self, off: u8) -> Registers {
-        return Registers::index((*self as u8) + off);
+        Registers::index((*self as u8) + off)
     }
 }
 
@@ -94,10 +96,15 @@ pub struct AVRWriter {
     globals: Vec<String>,
 
     section: usize,
-    label: usize
+    label: usize,
 }
 
-#[allow(non_snake_case, dead_code)]
+impl Default for AVRWriter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AVRWriter {
     pub fn new() -> Self {
         AVRWriter {
@@ -113,8 +120,10 @@ impl AVRWriter {
             name: name.to_string(),
             data: Vec::new(),
         };
+
         self.sections.push(section);
-        return (self.sections.len() - 1) as u16;
+
+        (self.sections.len() - 1) as u16
     }
 
     pub fn select_section(&mut self, section: u16) {
@@ -126,8 +135,10 @@ impl AVRWriter {
             name: name.to_string(),
             instructions: Vec::new(),
         };
+
         self.sections[self.section].data.push(label);
-        return (self.sections[self.section].data.len() - 1) as u16;
+
+        (self.sections[self.section].data.len() - 1) as u16
     }
 
     pub fn select_label(&mut self, label: u16) {
@@ -139,11 +150,15 @@ impl AVRWriter {
     }
 
     pub fn append_instruction(&mut self, instruction: String) {
-        self.sections[self.section].data[self.label].instructions.push(instruction);
+        self.sections[self.section].data[self.label]
+            .instructions
+            .push(instruction);
     }
 
     pub fn insert_instruction(&mut self, instruction: String, index: usize) {
-        self.sections[self.section].data[self.label].instructions.insert(index, instruction);
+        self.sections[self.section].data[self.label]
+            .instructions
+            .insert(index, instruction);
     }
 
     pub fn append_after(&mut self, instruction: String, index: usize) {
@@ -164,55 +179,55 @@ impl AVRWriter {
                 }
             }
         }
-        return repr;
+        repr
     }
 
-    pub fn PUSH(&mut self, register: Registers) {
+    pub fn push(&mut self, register: Registers) {
         self.append_instruction(format!("push {:?}", register));
     }
 
-    pub fn IN(&mut self, register: Registers, port: i16) {
+    pub fn r#in(&mut self, register: Registers, port: i16) {
         self.append_instruction(format!("in {:?}, {}", register, port));
     }
 
-    pub fn LDI(&mut self, register: Registers, value: i16) {
+    pub fn ldi(&mut self, register: Registers, value: i16) {
         self.append_instruction(format!("ldi {:?}, {}", register, value));
     }
 
-    pub fn RET(&mut self) {
+    pub fn ret(&mut self) {
         self.append_instruction("ret".to_string());
     }
 
-    pub fn POP(&mut self, register: Registers) {
+    pub fn pop(&mut self, register: Registers) {
         self.append_instruction(format!("pop {:?}", register));
     }
 
-    pub fn STD(&mut self, register: Registers, offset: u16, base: Registers) {
+    pub fn std(&mut self, register: Registers, offset: u16, base: Registers) {
         self.append_instruction(format!("std {:?}+{}, {:?}", register, offset, base));
-    }   
+    }
 
-    pub fn LDD(&mut self, register: Registers, base: Registers, offset: u16) {
+    pub fn ldd(&mut self, register: Registers, base: Registers, offset: u16) {
         self.append_instruction(format!("ldd {:?}, {:?}+{}", register, base, offset));
     }
 
-    pub fn ADD(&mut self, dest: Registers, source: Registers) {
+    pub fn add(&mut self, dest: Registers, source: Registers) {
         self.append_instruction(format!("add {:?}, {:?}", dest, source));
     }
 
-    pub fn ADC(&mut self, dest: Registers, source: Registers) {
+    pub fn adc(&mut self, dest: Registers, source: Registers) {
         self.append_instruction(format!("adc {:?}, {:?}", dest, source));
     }
 
     pub fn function_prologue(&mut self) {
-        self.PUSH(Registers::R28);
-        self.PUSH(Registers::R29);
-        self.IN(Registers::R28, 0x3D);
-        self.IN(Registers::R29, 0x3E);
+        self.push(Registers::R28);
+        self.push(Registers::R29);
+        self.r#in(Registers::R28, 0x3D);
+        self.r#in(Registers::R29, 0x3E);
     }
 
     pub fn function_epilogue(&mut self) {
-        self.POP(Registers::R29);
-        self.POP(Registers::R28);
-        self.RET();
+        self.pop(Registers::R29);
+        self.pop(Registers::R28);
+        self.ret();
     }
 }
