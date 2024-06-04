@@ -18,17 +18,29 @@ Expr {
 }
 */
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Hash)]
+pub struct Spanned<T>(pub core::ops::Range<usize>, pub T);
+
+impl<T> Spanned<T> {
+    pub fn map<B, F>(self, f: F) -> Spanned<B>
+    where
+        F: FnOnce(T) -> B,
+    {
+        Spanned(self.0.clone(), f(self.1))
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum Expr {
-    Number(i32),
+    Number(Spanned<i32>),
+    Ident(Spanned<String>),
     Add(Box<Expr>, Box<Expr>),
     Sub(Box<Expr>, Box<Expr>),
     Mul(Box<Expr>, Box<Expr>),
     Div(Box<Expr>, Box<Expr>),
     Pow(Box<Expr>, Box<Expr>),
     Neg(Box<Expr>),
-    Var(String),
-    Decl(String, String, Box<Expr>),
+    Decl(String, Type, Box<Expr>),
     Assign(String, Box<Expr>),
     Call(String, Vec<Expr>),
     Block(Vec<Expr>),
@@ -42,29 +54,15 @@ pub enum Expr {
     Empty,
 }
 
-#[derive(Debug)]
-pub struct Ast {
-    pub root: Vec<Expr>,
+#[derive(Debug, Clone)]
+pub enum Type {
+    Int,
+    Float,
+
+    Other(String),
 }
 
-const RESULTADD: &str = "Ast { root: [Assign(\"x\", Number(10)), Assign(\"y\", Number(20)), Return(Add(Var(\"x\"), Var(\"y\")))] }";
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_add_ast() {
-        let tast = Ast {
-            root: vec![
-                Expr::Assign("x".to_string(), Box::new(Expr::Number(10))),
-                Expr::Assign("y".to_string(), Box::new(Expr::Number(20))),
-                Expr::Return(Box::new(Expr::Add(
-                    Box::new(Expr::Var("x".to_string())),
-                    Box::new(Expr::Var("y".to_string())),
-                ))),
-            ],
-        };
-        assert_eq!(format!("{:?}", tast).as_str(), RESULTADD);
-    }
+#[derive(Debug, Clone)]
+pub struct Ast {
+    pub root: Vec<Expr>,
 }
