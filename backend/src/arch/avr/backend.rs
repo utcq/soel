@@ -15,10 +15,10 @@ pub enum BackendError {
 }
 
 struct Function {
-    name: String,
-    ret: String,
-    args: Vec<String>,
-    address: u16,
+    _name: String,
+    _ret: String,
+    _args: Vec<String>,
+    _address: u16,
 }
 
 #[derive(Clone)]
@@ -69,10 +69,10 @@ impl<'a> AVRBackend<'a> {
         let addr = self.assm.create_label(name);
 
         self.ctx.functions.push(Function {
-            name: name.into(),
-            ret: ret.into(),
-            args: args.iter().map(|(_, ty)| ty.clone()).collect(),
-            address: addr,
+            _name: name.into(),
+            _ret: ret.into(),
+            _args: args.iter().map(|(_, ty)| ty.clone()).collect(),
+            _address: addr,
         });
         self.assm.select_label(addr);
 
@@ -126,7 +126,7 @@ impl<'a> AVRBackend<'a> {
         Ok(2)
     }
 
-    fn emit_moffset(&mut self, offset: u16, size: u16, name: &str) -> Result<(), BackendError> {
+    fn emit_moffset(&mut self, offset: u16, size: u16) -> Result<(), BackendError> {
         let dest = self.reserve_single();
         for i in offset + 1..offset + size + 1 {
             self.assm
@@ -139,7 +139,7 @@ impl<'a> AVRBackend<'a> {
     fn load_variable(&mut self, name: String) -> Result<u16, BackendError> {
         for var in self.ctx.locals.clone().iter() {
             if var.name == name {
-                self.emit_moffset(var.stack_offset, var.size, &var.name)?;
+                self.emit_moffset(var.stack_offset, var.size)?;
                 return Ok(var.size);
             }
         }
@@ -210,7 +210,6 @@ impl<'a> AVRBackend<'a> {
 
         self.ctx.locals.push(Variable {
             name: name.into(),
-            var_type: ty.into(),
             size,
             stack_offset: self.ctx.stack_offset,
         });
@@ -262,7 +261,7 @@ impl<'a> AVRBackend<'a> {
                 _ => return Err(BackendError::UnsupportedValue),
             }
         }
-
+        println!("{}", self.assm.repr());
         Ok(())
     }
 }

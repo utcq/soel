@@ -47,14 +47,13 @@ pub struct Ast {
     pub root: Vec<Expr>,
 }
 
-const RESULTADD: &str = "Ast { root: [Assign(\"x\", Number(10)), Assign(\"y\", Number(20)), Return(Add(Var(\"x\"), Var(\"y\")))] }";
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_add_ast() {
+        const RESULTADD: &str = "Ast { root: [Assign(\"x\", Number(10)), Assign(\"y\", Number(20)), Return(Add(Var(\"x\"), Var(\"y\")))] }";
         let tast = Ast {
             root: vec![
                 Expr::Assign("x".to_string(), Box::new(Expr::Number(10))),

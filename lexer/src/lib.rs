@@ -53,6 +53,7 @@ pub enum LexerErrorKind {
 pub type Span = std::ops::Range<usize>;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Remove this attribute when using Spanned in reporter
 pub struct Spanned<T>(Span, T);
 
 #[derive(Debug, Clone, Logos)]

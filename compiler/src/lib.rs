@@ -1,11 +1,9 @@
 #[cfg(test)]
 mod tests {
     use ast::{Ast, Expr};
-
-    use super::*;
     #[test]
     fn test_add_ast() {
-        let tast = Ast {
+        let _tast = Ast {
             /*
             int main() {
                 int x = 10;
