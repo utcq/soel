@@ -210,7 +210,6 @@ impl<'a> AVRBackend<'a> {
 
         self.ctx.locals.push(Variable {
             name: name.into(),
-            var_type: ty.into(),
             size,
             stack_offset: self.ctx.stack_offset,
         });

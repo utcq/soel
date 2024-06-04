@@ -5,3 +5,4 @@ edition.workspace = true
 
 [dependencies]
 ast = {path="../ast"}
+reports = { path = "../reports"}
