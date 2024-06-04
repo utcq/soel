@@ -50,7 +50,7 @@ pub enum Expr {
     Return(Box<Expr>),
     Break,
     Continue,
-    Function(String, String, Vec<(String, String)>, Box<Expr>),
+    Function(String, Type, Vec<(String, String)>, Box<Expr>),
     Empty,
 }
 

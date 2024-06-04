@@ -1,6 +1,6 @@
 use crate::arch::avr::asm_writer::*;
 
-use ast::{Ast, Expr};
+use ast::{Ast, Expr, Spanned, Type};
 
 const R24: u32 = 1 << 2; // R24 - R27
 const R18: u32 = 2 << 2; // R18 - R23
@@ -17,7 +17,7 @@ pub enum BackendError {
 
 struct Function {
     name: String,
-    ret: String,
+    ret: Type,
     args: Vec<String>,
     address: u16,
 }
@@ -65,7 +65,7 @@ impl<'a> AVRBackend<'a> {
     fn emit_function(
         &mut self,
         name: &str,
-        ret: &str,
+        ret: &Type,
         args: &[(String, String)],
         body: &Expr,
     ) -> Result<(), BackendError> {
@@ -73,7 +73,7 @@ impl<'a> AVRBackend<'a> {
 
         self.ctx.functions.push(Function {
             name: name.into(),
-            ret: ret.into(),
+            ret: ret.clone(),
             args: args.iter().map(|(_, ty)| ty.clone()).collect(),
             address: addr,
         });
@@ -122,12 +122,11 @@ impl<'a> AVRBackend<'a> {
     }
 
     fn load_constant(&mut self, val: i16) -> Result<u16, BackendError> {
-        let dest: Registers;
-        if self.ctx.target_register == Registers::R0 {
-            dest = self.reserve_single();
+        let dest = if self.ctx.target_register == Registers::R0 {
+            self.reserve_single()
         } else {
-            dest = self.ctx.target_register;
-        }
+            self.ctx.target_register
+        };
 
         self.assm.ldi(dest, val & 0xff);
         self.assm.ldi(dest.add(1), (val >> 8) & 0xff);
@@ -135,12 +134,11 @@ impl<'a> AVRBackend<'a> {
     }
 
     fn emit_moffset(&mut self, offset: u16, size: u16) -> Result<(), BackendError> {
-        let dest: Registers;
-        if self.ctx.target_register == Registers::R0 {
-            dest = self.reserve_single();
+        let dest = if self.ctx.target_register == Registers::R0 {
+            self.reserve_single()
         } else {
-            dest = self.ctx.target_register;
-        }
+            self.ctx.target_register
+        };
 
         for i in offset + 1..offset + size + 1 {
             self.assm
@@ -207,7 +205,7 @@ impl<'a> AVRBackend<'a> {
     }
 
     fn emit_call(&mut self, name: &str, args: &Vec<Expr>) -> Result<u16, BackendError> {
-        let func = self.resolve_function(&name)?;
+        let func = self.resolve_function(name)?;
         let ret_size = self.resolve_size(&func.ret)?;
         let mut current_reg = Registers::R16;
         let mut arg_size;
@@ -225,31 +223,44 @@ impl<'a> AVRBackend<'a> {
         Ok(ret_size)
     }
 
-    fn emit_expression(&mut self, expr: &Expr, root: bool, target_register: Registers) -> Result<u16, BackendError> {
+    fn emit_expression(
+        &mut self,
+        expr: &Expr,
+        root: bool,
+        target_register: Registers,
+    ) -> Result<u16, BackendError> {
         // Root is to identify if the expression is the root of the operation tree
         self.ctx.target_register = target_register;
         if root {
             self.ctx.used_regs = EMPTY;
         }
         match expr {
-            Expr::Number(value) => self.load_constant(value.clone() as i16),
-            Expr::Var(name) => self.load_variable(name.to_string()),
+            Expr::Number(Spanned(_, value)) => self.load_constant(*value as i16),
+            Expr::Ident(Spanned(_, name)) => self.load_variable(name.to_string()),
             Expr::Add(lhs, rhs) | Expr::Sub(lhs, rhs) => self.emit_binop(expr, lhs, rhs),
             Expr::Call(name, args) => self.emit_call(name, args),
             _ => Err(BackendError::UnsupportedValue),
         }
     }
 
-    fn resolve_size(&self, ty: &str) -> Result<u16, BackendError> {
+    fn resolve_size(&self, ty: &Type) -> Result<u16, BackendError> {
         match ty {
-            "char" => Ok(1),
-            "int" => Ok(2),
-            "long" => Ok(4),
+            Type::Int => Ok(2),
+            Type::Other(other) => match other.as_str() {
+                "char" => Ok(1),
+                "long" => Ok(4),
+                _ => Err(BackendError::AssemblerError),
+            },
             _ => Err(BackendError::AssemblerError),
         }
     }
 
-    fn emit_declaration(&mut self, name: &str, ty: &str, value: &Expr) -> Result<(), BackendError> {
+    fn emit_declaration(
+        &mut self,
+        name: &str,
+        ty: &Type,
+        value: &Expr,
+    ) -> Result<(), BackendError> {
         let size = self.resolve_size(ty)?;
 
         self.ctx.locals.push(Variable {
@@ -288,7 +299,7 @@ impl<'a> AVRBackend<'a> {
             _ => {
                 self.emit_expression(stat, true, Registers::R0)?;
                 Ok(())
-            },
+            }
         }
     }
 
@@ -334,13 +345,11 @@ mod tests {
             */
             root: vec![Expr::Function(
                 "main".to_string(),
-                "int".to_string(),
+                Type::Int,
                 vec![],
                 Box::new(Expr::Block(vec![
-                    Expr::Call("main".to_string(), vec![
-                        Expr::Number(10)
-                    ]),
-                     /*Expr::Decl(
+                    Expr::Call("main".to_string(), vec![Expr::Number(Spanned(0..0, 10))]),
+                    /*Expr::Decl(
                         "x".to_string(),
                         "int".to_string(),
                         Box::new(Expr::Number(3)),
@@ -353,11 +362,11 @@ mod tests {
                     Expr::Return(Box::new(Expr::Add(
                         Box::new(Expr::Add(
                             Box::new(Expr::Number(3)),
-                            Box::new(Expr::Var("y".to_string())),
+                            Box::new(Expr::Ident("y".to_string())),
                         )),
                         Box::new(Expr::Add(
                             Box::new(Expr::Number(2)),
-                            Box::new(Expr::Var("x".to_string())),
+                            Box::new(Expr::Ident("x".to_string())),
                         )),
                     ))),*/
                 ])),
