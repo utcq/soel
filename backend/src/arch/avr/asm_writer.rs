@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Registers {
     R0,
     R1,
@@ -216,6 +216,10 @@ impl AVRWriter {
 
     pub fn adc(&mut self, dest: Registers, source: Registers) {
         self.append_instruction(format!("adc {:?}, {:?}", dest, source));
+    }
+
+    pub fn mov(&mut self, dest: Registers, source: Registers) {
+        self.append_instruction(format!("mov {:?}, {:?}", dest, source));
     }
 
     pub fn function_prologue(&mut self) {

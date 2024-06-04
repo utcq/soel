@@ -12,13 +12,14 @@ pub enum BackendError {
     RanOutOfRegisters,
     UnsupportedBinaryOperation,
     UnsupportedValue,
+    CannotResolveFunction,
 }
 
 struct Function {
-    _name: String,
-    _ret: String,
-    _args: Vec<String>,
-    _address: u16,
+    name: String,
+    ret: String,
+    args: Vec<String>,
+    address: u16,
 }
 
 #[derive(Clone)]
@@ -35,6 +36,7 @@ struct Context {
     data: u16,
     stack_offset: u16,
     used_regs: u32,
+    target_register: Registers,
 }
 
 pub struct AVRBackend<'a> {
@@ -55,6 +57,7 @@ impl<'a> AVRBackend<'a> {
                 data: 0,
                 stack_offset: 0,
                 used_regs: EMPTY,
+                target_register: Registers::R0,
             },
         }
     }
@@ -69,10 +72,10 @@ impl<'a> AVRBackend<'a> {
         let addr = self.assm.create_label(name);
 
         self.ctx.functions.push(Function {
-            _name: name.into(),
-            _ret: ret.into(),
-            _args: args.iter().map(|(_, ty)| ty.clone()).collect(),
-            _address: addr,
+            name: name.into(),
+            ret: ret.into(),
+            args: args.iter().map(|(_, ty)| ty.clone()).collect(),
+            address: addr,
         });
         self.assm.select_label(addr);
 
@@ -119,7 +122,12 @@ impl<'a> AVRBackend<'a> {
     }
 
     fn load_constant(&mut self, val: i16) -> Result<u16, BackendError> {
-        let dest = self.reserve_single();
+        let dest: Registers;
+        if self.ctx.target_register == Registers::R0 {
+            dest = self.reserve_single();
+        } else {
+            dest = self.ctx.target_register;
+        }
 
         self.assm.ldi(dest, val & 0xff);
         self.assm.ldi(dest.add(1), (val >> 8) & 0xff);
@@ -127,7 +135,13 @@ impl<'a> AVRBackend<'a> {
     }
 
     fn emit_moffset(&mut self, offset: u16, size: u16) -> Result<(), BackendError> {
-        let dest = self.reserve_single();
+        let dest: Registers;
+        if self.ctx.target_register == Registers::R0 {
+            dest = self.reserve_single();
+        } else {
+            dest = self.ctx.target_register;
+        }
+
         for i in offset + 1..offset + size + 1 {
             self.assm
                 .ldd(dest.add((i - offset - 1) as u8), Registers::Y, i)
@@ -149,8 +163,8 @@ impl<'a> AVRBackend<'a> {
     fn emit_binop(&mut self, expr: &Expr, lhs: &Expr, rhs: &Expr) -> Result<u16, BackendError> {
         let rcouple: (Registers, Registers);
 
-        let lhs_size = self.emit_expression(lhs, false)?;
-        let rhs_size = self.emit_expression(rhs, false)?;
+        let lhs_size = self.emit_expression(lhs, false, Registers::R0)?;
+        let rhs_size = self.emit_expression(rhs, false, Registers::R0)?;
 
         if self.ctx.used_regs & R24 != 0
             && self.ctx.used_regs & R18 != 0
@@ -183,8 +197,37 @@ impl<'a> AVRBackend<'a> {
         Ok(lhs_size.max(rhs_size))
     }
 
-    fn emit_expression(&mut self, expr: &Expr, root: bool) -> Result<u16, BackendError> {
+    fn resolve_function(&self, name: &str) -> Result<&Function, BackendError> {
+        for func in self.ctx.functions.iter() {
+            if func.name == name {
+                return Ok(func);
+            }
+        }
+        Err(BackendError::CannotResolveFunction)
+    }
+
+    fn emit_call(&mut self, name: &str, args: &Vec<Expr>) -> Result<u16, BackendError> {
+        let func = self.resolve_function(&name)?;
+        let ret_size = self.resolve_size(&func.ret)?;
+        let mut current_reg = Registers::R16;
+        let mut arg_size;
+
+        for arg in args {
+            arg_size = self.emit_expression(arg, true, current_reg)?;
+            for o in 0..arg_size {
+                if current_reg != Registers::R24 && self.ctx.target_register == Registers::R0 {
+                    self.assm
+                        .mov(current_reg.add(o as u8), Registers::R24.add((o) as u8));
+                }
+            }
+            current_reg = current_reg.add(arg_size as u8);
+        }
+        Ok(ret_size)
+    }
+
+    fn emit_expression(&mut self, expr: &Expr, root: bool, target_register: Registers) -> Result<u16, BackendError> {
         // Root is to identify if the expression is the root of the operation tree
+        self.ctx.target_register = target_register;
         if root {
             self.ctx.used_regs = EMPTY;
         }
@@ -192,6 +235,7 @@ impl<'a> AVRBackend<'a> {
             Expr::Number(value) => self.load_constant(value.clone() as i16),
             Expr::Var(name) => self.load_variable(name.to_string()),
             Expr::Add(lhs, rhs) | Expr::Sub(lhs, rhs) => self.emit_binop(expr, lhs, rhs),
+            Expr::Call(name, args) => self.emit_call(name, args),
             _ => Err(BackendError::UnsupportedValue),
         }
     }
@@ -214,7 +258,7 @@ impl<'a> AVRBackend<'a> {
             stack_offset: self.ctx.stack_offset,
         });
 
-        self.emit_expression(value, true)?;
+        self.emit_expression(value, true, Registers::R24)?;
 
         let new_offset = self.ctx.stack_offset + 1;
 
@@ -232,7 +276,7 @@ impl<'a> AVRBackend<'a> {
     }
 
     fn emit_return(&mut self, expr: &Expr) -> Result<(), BackendError> {
-        self.emit_expression(expr, true)?;
+        self.emit_expression(expr, true, Registers::R24)?;
         Ok(())
     }
 
@@ -241,7 +285,10 @@ impl<'a> AVRBackend<'a> {
         match stat {
             Expr::Decl(name, ty, value) => self.emit_declaration(name, ty, value),
             Expr::Return(expr) => self.emit_return(expr),
-            _ => Err(BackendError::UnsupportedValue),
+            _ => {
+                self.emit_expression(stat, true, Registers::R0)?;
+                Ok(())
+            },
         }
     }
 
@@ -290,7 +337,10 @@ mod tests {
                 "int".to_string(),
                 vec![],
                 Box::new(Expr::Block(vec![
-                    Expr::Decl(
+                    Expr::Call("main".to_string(), vec![
+                        Expr::Number(10)
+                    ]),
+                     /*Expr::Decl(
                         "x".to_string(),
                         "int".to_string(),
                         Box::new(Expr::Number(3)),
@@ -309,7 +359,7 @@ mod tests {
                             Box::new(Expr::Number(2)),
                             Box::new(Expr::Var("x".to_string())),
                         )),
-                    ))),
+                    ))),*/
                 ])),
             )],
         };
