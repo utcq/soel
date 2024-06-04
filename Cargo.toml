@@ -1,9 +1,5 @@
 [workspace]
-<<<<<<< HEAD
-members = ["ast", "backend", "compiler", "parser", "reports"]
-=======
 members = ["ast", "backend", "compiler", "lexer", "parser", "reports"]
->>>>>>> c11304b8b2b12d6412a4aef49b8675cebf697268
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
