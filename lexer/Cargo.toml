@@ -1,9 +1,9 @@
 [package]
-name = "parser"
+name = "lexer"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-ast = {path="../ast"}
-lexer = {path="../lexer"}
+logos = "0.14.0"
+num-traits = "0.2.19"
 reports = {path="../reports"}
